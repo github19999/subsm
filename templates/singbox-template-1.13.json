@@ -1,1 +1,166 @@
-3
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "store_fakeip": true
+    },
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "secret": "",
+      "default_mode": "rule"
+    }
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "dns-remote",
+        "type": "https",
+        "server": "8.8.8.8",
+        "domain_resolver": "dns-resolver",
+        "detour": "proxy"
+      },
+      {
+        "tag": "dns-local",
+        "type": "https",
+        "server": "223.5.5.5",
+        "domain_resolver": "dns-resolver",
+        "detour": "direct"
+      },
+      {
+        "tag": "dns-resolver",
+        "type": "udp",
+        "server": "223.5.5.5",
+        "detour": "direct"
+      },
+      {
+        "tag": "dns-fakeip",
+        "type": "fakeip",
+        "inet4_range": "198.18.0.0/15",
+        "inet6_range": "fc00::/18"
+      }
+    ],
+    "rules": [
+      {
+        "clash_mode": "direct",
+        "server": "dns-local"
+      },
+      {
+        "clash_mode": "global",
+        "server": "dns-remote"
+      },
+      {
+        "rule_set": ["geosite-cn", "geosite-private"],
+        "server": "dns-local"
+      },
+      {
+        "query_type": ["A", "AAAA"],
+        "server": "dns-fakeip"
+      }
+    ],
+    "independent_cache": true,
+    "final": "dns-remote"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "address": [
+        "172.19.0.1/30",
+        "fdfe:dcba:9876::1/126"
+      ],
+      "mtu": 9000,
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "gvisor"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "proxy",
+      "outbounds": ["手动选择", "自动选择"],
+      "default": "手动选择",
+      "interrupt_exist_connections": true
+    },
+    {
+      "type": "selector",
+      "tag": "手动选择",
+      "outbounds": ["PLACEHOLDER"]
+    },
+    {
+      "type": "urltest",
+      "tag": "自动选择",
+      "outbounds": ["PLACEHOLDER"],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "5m",
+      "tolerance": 50
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "clash_mode": "direct",
+        "outbound": "direct"
+      },
+      {
+        "clash_mode": "global",
+        "outbound": "proxy"
+      },
+      {
+        "ip_cidr": ["198.18.0.0/15"],
+        "outbound": "proxy"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "rule_set": ["geosite-cn", "geoip-cn"],
+        "outbound": "direct"
+      }
+    ],
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geosite-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs",
+        "download_detour": "proxy",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-private",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-private.srs",
+        "download_detour": "proxy",
+        "update_interval": "3d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "download_detour": "proxy",
+        "update_interval": "3d"
+      }
+    ],
+    "auto_detect_interface": true,
+    "final": "proxy"
+  }
+}
