@@ -89,12 +89,12 @@
     {
       "type": "selector",
       "tag": "手动选择",
-      "outbounds": ["PLACEHOLDER"]
+      "outbounds": []
     },
     {
       "type": "urltest",
       "tag": "自动选择",
-      "outbounds": ["PLACEHOLDER"],
+      "outbounds": [],
       "url": "https://www.gstatic.com/generate_204",
       "interval": "5m",
       "tolerance": 50
